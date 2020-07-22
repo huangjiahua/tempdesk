@@ -1,7 +1,6 @@
 package mock
 
 import (
-	"fmt"
 	td "github.com/huangjiahua/tempdesk"
 )
 
@@ -15,7 +14,7 @@ func NewUserService() *UserService {
 
 func (u *UserService) CreateUser(user td.User) (err error) {
 	if _, ok := u.M[user.Name]; ok {
-		err = fmt.Errorf("name already exist")
+		err = &td.UserServiceError{Kind: td.NameAlreadyExist, Err: nil}
 		return
 	}
 	u.M[user.Name] = user

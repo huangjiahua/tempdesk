@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -10,6 +11,7 @@ import (
 	"github.com/huangjiahua/tempdesk/internal/auth"
 	thttp "github.com/huangjiahua/tempdesk/internal/http"
 	"github.com/huangjiahua/tempdesk/internal/mock"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -17,7 +19,7 @@ import (
 	"time"
 )
 
-func TestUser_ServeHTTP(t *testing.T) {
+func TestUser_ServeHTTP_Get(t *testing.T) {
 	h := &User{
 		state: &thttp.State{
 			Users:  mock.NewUserService(),
@@ -52,7 +54,7 @@ func TestUser_ServeHTTP(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if res.StatusCode != http.StatusOK {
+	if !assert.Equal(t, http.StatusOK, res.StatusCode, "wrong response status") {
 		b, _ := ioutil.ReadAll(res.Body)
 		_ = res.Body.Close()
 		t.Fatalf("Wrong response: %v", string(b))
@@ -67,7 +69,49 @@ func TestUser_ServeHTTP(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if m["name"] != "Sam" {
-		t.Error("Wrong response")
+	assert.Equal(t, "Sam", m["name"], "Wrong response")
+}
+
+func TestUser_ServeHTTP_POST(t *testing.T) {
+	h := &User{
+		state: &thttp.State{
+			Users:  mock.NewUserService(),
+			Files:  mock.NewFileService(),
+			Auther: auth.NewHMACAuther(),
+		},
 	}
+
+	ts := httptest.NewServer(h)
+	defer ts.Close()
+
+	info := userSignUpInfo{
+		Name: "jack",
+		Key:  "key",
+		Meta: make(map[string]string),
+	}
+
+	body, err := json.Marshal(&info)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := http.Post(ts.URL, "application/json", bytes.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Wrong response code")
+
+	resp, err = http.Post(ts.URL, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("Wrong response status %v", resp.StatusCode)
+	}
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "Wrong response code")
+	msg, err := ioutil.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, "name already exists\n", string(msg), "Wrong message")
 }
