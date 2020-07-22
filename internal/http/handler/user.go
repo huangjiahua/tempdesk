@@ -58,9 +58,13 @@ func (u *User) ServeAddUser(res http.ResponseWriter, req *http.Request) {
 
 	err = u.state.Users.CreateUser(user)
 	if err != nil {
-		// TODO: handle each kind of error
 		tlog.Debug("error creating new user", tlog.String("err", err.Error()))
-		http.Error(res, "error creating new user", http.StatusBadRequest)
+		switch err.(*td.UserServiceError).Kind {
+		case td.NameAlreadyExist:
+			http.Error(res, "name already exists", http.StatusBadRequest)
+		default:
+			http.Error(res, "error creating new user", http.StatusBadRequest)
+		}
 		return
 	}
 	res.WriteHeader(http.StatusOK)
