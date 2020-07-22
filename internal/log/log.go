@@ -51,3 +51,7 @@ func Duration(key string, val time.Duration) zap.Field {
 func Int(key string, val int) zap.Field {
 	return zap.Int(key, val)
 }
+
+func Err(err error) zap.Field {
+	return zap.String("err", err.Error())
+}
