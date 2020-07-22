@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	td "github.com/huangjiahua/tempdesk"
 	thttp "github.com/huangjiahua/tempdesk/internal/http"
-	tlog "github.com/huangjiahua/tempdesk/internal/log"
+	tlog "github.com/huangjiahua/tempdesk/pkg/log"
 	"io"
 	"io/ioutil"
 	"net/http"
