@@ -18,6 +18,7 @@ func SetupDev() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	logger = logger.WithOptions(zap.AddCallerSkip(1))
 }
 
 func Debug(msg string, fields ...zap.Field) {
