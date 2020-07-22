@@ -1,7 +1,7 @@
 package tempdesk
 
 const (
-	NameAlreadyExist string = "Name Already Exist"
+	NameAlreadyExist string = "name already exist"
 )
 
 type User struct {
@@ -14,6 +14,7 @@ type User struct {
 type UserService interface {
 	User(name string) (user User, ok bool)
 	CreateUser(user User) (err error)
+	UpdateUser(user User) (err error)
 }
 
 type UserServiceError struct {
