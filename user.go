@@ -1,7 +1,7 @@
 package tempdesk
 
 const (
-	NameAlreadyExist string = "name already exist"
+	NameAlreadyExists string = "name already exists"
 )
 
 type User struct {

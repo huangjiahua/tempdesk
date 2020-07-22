@@ -76,7 +76,7 @@ func (u *User) ServeAddUser(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		tlog.Debug(ErrorCreatingUser, tlog.Err(err))
 		switch err.(*td.UserServiceError).Kind {
-		case td.NameAlreadyExist:
+		case td.NameAlreadyExists:
 			http.Error(res, err.Error(), http.StatusBadRequest)
 		default:
 			http.Error(res, ErrorCreatingUser, http.StatusBadRequest)

@@ -14,11 +14,16 @@ func NewUserService() *UserService {
 
 func (u *UserService) CreateUser(user td.User) (err error) {
 	if _, ok := u.M[user.Name]; ok {
-		err = &td.UserServiceError{Kind: td.NameAlreadyExist, Err: nil}
+		err = &td.UserServiceError{Kind: td.NameAlreadyExists, Err: nil}
 		return
 	}
 	u.M[user.Name] = user
 	return
+}
+
+func (u *UserService) UpdateUser(user td.User) (err error) {
+	// TODO
+	return nil
 }
 
 func (u *UserService) User(name string) (user td.User, ok bool) {
