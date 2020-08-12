@@ -22,8 +22,12 @@ func (u *UserService) CreateUser(user td.User) (err error) {
 }
 
 func (u *UserService) UpdateUser(user td.User) (err error) {
-	// TODO
-	return nil
+	if _, ok := u.M[user.Name]; !ok {
+		err = &td.UserServiceError{Kind: td.NameNotExists, Err: nil}
+		return
+	}
+	u.M[user.Name] = user
+	return
 }
 
 func (u *UserService) User(name string) (user td.User, ok bool) {
