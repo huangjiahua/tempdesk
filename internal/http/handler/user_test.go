@@ -173,6 +173,9 @@ func TestUser_ServeHTTP_PUT(t *testing.T) {
 		t.Fatalf("Wrong response: %v", string(b))
 	}
 
+	user1, _ := h.state.Users.User("jack")
+	assert.Equal(t, "new-key", user1.Key, "wrong key")
+
 	// update with outdated key
 	res, err = http.DefaultClient.Do(req)
 	if err != nil {
