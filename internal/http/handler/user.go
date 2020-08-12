@@ -21,6 +21,10 @@ const (
 	ErrorCloseReader    = "error close reader"
 	ErrorCreatingUser   = "error creating user"
 	ErrorUpdatingUser   = "error updating user"
+	ErrorDeletingUser   = "error deleting user"
+
+	ActionUpdate = "update"
+	ActionDelete = "delete"
 )
 
 type User struct {
@@ -90,7 +94,7 @@ func (u *User) ServeAddUser(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
-func (u *User) ServeUpdateUser(res http.ResponseWriter, req *http.Request) {
+func (u *User) ServeUpdateUser(res http.ResponseWriter, req *http.Request, action string) {
 	user, err := u.state.AuthUser(req)
 	if err != nil {
 		tlog.Debug(ErrorAuthenticating, tlog.Err(err))
@@ -118,16 +122,28 @@ func (u *User) ServeUpdateUser(res http.ResponseWriter, req *http.Request) {
 		Meta: info.Meta,
 	}
 
-	err = u.state.Users.UpdateUser(upd)
-	if err != nil {
-		tlog.Debug(ErrorUpdatingUser, tlog.Err(err))
-		http.Error(res, ErrorUpdatingUser, http.StatusBadRequest)
-		return
+	if action == ActionUpdate {
+		err = u.state.Users.UpdateUser(upd)
+		if err != nil {
+			tlog.Debug(ErrorUpdatingUser, tlog.Err(err))
+			http.Error(res, ErrorUpdatingUser, http.StatusBadRequest)
+			return
+		}
+		tlog.Info("update user request",
+			tlog.String("exe", user.Name),
+			tlog.String("target", info.Name))
+	} else {
+		// delete
+		err = u.state.Users.DeleteUser(upd)
+		if err != nil {
+			tlog.Debug(ErrorDeletingUser, tlog.Err(err))
+			http.Error(res, ErrorDeletingUser, http.StatusBadRequest)
+			return
+		}
+		tlog.Info("delete user request",
+			tlog.String("exe", user.Name),
+			tlog.String("target", info.Name))
 	}
-
-	tlog.Info("update user request",
-		tlog.String("exe", user.Name),
-		tlog.String("target", info.Name))
 
 	res.WriteHeader(http.StatusOK)
 }
@@ -146,7 +162,9 @@ func (u *User) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	case http.MethodPost:
 		u.ServeAddUser(res, req)
 	case http.MethodPut:
-		u.ServeUpdateUser(res, req)
+		u.ServeUpdateUser(res, req, ActionUpdate)
+	case http.MethodDelete:
+		u.ServeUpdateUser(res, req, ActionDelete)
 	default:
 		tlog.Debug("unsupported method", tlog.String("method", req.Method))
 		http.Error(res, "method not supported", http.StatusMethodNotAllowed)

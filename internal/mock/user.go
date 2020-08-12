@@ -30,6 +30,15 @@ func (u *UserService) UpdateUser(user td.User) (err error) {
 	return
 }
 
+func (u *UserService) DeleteUser(user td.User) (err error) {
+	if _, ok := u.M[user.Name]; !ok {
+		err = &td.UserServiceError{Kind: td.NameNotExists, Err: nil}
+		return
+	}
+	delete(u.M, user.Name)
+	return
+}
+
 func (u *UserService) User(name string) (user td.User, ok bool) {
 	user, ok = u.M[name]
 	return

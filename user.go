@@ -16,6 +16,7 @@ type UserService interface {
 	User(name string) (user User, ok bool)
 	CreateUser(user User) (err error)
 	UpdateUser(user User) (err error)
+	DeleteUser(user User) (err error)
 }
 
 type UserServiceError struct {
