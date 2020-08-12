@@ -145,6 +145,8 @@ func (u *User) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		u.ServeGetUser(res, req)
 	case http.MethodPost:
 		u.ServeAddUser(res, req)
+	case http.MethodPut:
+		u.ServeUpdateUser(res, req)
 	default:
 		tlog.Debug("unsupported method", tlog.String("method", req.Method))
 		http.Error(res, "method not supported", http.StatusMethodNotAllowed)
