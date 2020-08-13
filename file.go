@@ -2,12 +2,7 @@ package tempdesk
 
 import "io"
 
-type FilePermission struct {
-	owner       string
-	exclusive   bool
-	notAllowed  map[string]bool
-	allowed     map[string]bool
-	allowedMeta map[string]string
+type FilePermission interface {
 }
 
 type File interface {
@@ -17,11 +12,11 @@ type File interface {
 	io.ReaderAt
 	io.WriterAt
 
-	Perm() *FilePermission
+	Perm() FilePermission
 
-	Meta(key string) (value string)
+	Meta(key string) (value string, ok bool)
 	WriteMeta(key string, value string) (err error)
-	FileMeta(key string) (value interface{})
+	FileMeta(key string) (value interface{}, ok bool)
 	WriteFileMeta(key string, value interface{}) (err error)
 
 	Truncate(pos int64, data []byte) (err error)
@@ -29,7 +24,7 @@ type File interface {
 
 type FileService interface {
 	File(path string) (err error)
-	Open(path string, flags int, perm *FilePermission) (file *File, err error)
+	Open(path string, flags int, perm FilePermission) (file File, err error)
 	Rename(dest string, src string) (err error)
 	Remove(path string) (err error)
 }
