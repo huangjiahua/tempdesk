@@ -122,28 +122,128 @@ func (f *File) WriteFileMeta(key string, value interface{}) (err error) {
 }
 
 func (f *File) Truncate(pos int64, data []byte) (err error) {
-	panic("implement me")
+	f.file.rw.Lock()
+	defer f.file.rw.Unlock()
+
+	if int64(len(f.file.data)) != pos+int64(len(data)) {
+		data := make([]byte, pos+int64(len(data)))
+		copy(data[:pos], f.file.data)
+		f.file.data = data
+	}
+
+	copy(f.file.data[pos:], data)
+
+	return nil
 }
 
 type FileService struct {
+	rw    sync.RWMutex
+	files map[string]*File
 }
 
-func (fs FileService) File(path string) (err error) {
+func (fs *FileService) File(path string) (err error) {
+	fs.rw.RLock()
+	defer fs.rw.RUnlock()
+	if _, ok := fs.files[path]; !ok {
+		return &td.FileServiceError{Kind: td.FileNotExist}
+	}
+	return nil
+}
+
+func (fs *FileService) Open(path string, flags int, perm td.FilePermission) (file td.File, err error) {
 	panic("implement me")
 }
 
-func (fs FileService) Open(path string, flags int, perm td.FilePermission) (file td.File, err error) {
-	panic("implement me")
+func (fs *FileService) Rename(dest string, src string) (err error) {
+	fs.rw.Lock()
+	defer fs.rw.Unlock()
+	if file, ok := fs.files[src]; ok {
+		fs.files[dest] = file
+		delete(fs.files, src)
+		return nil
+	}
+	return &td.FileServiceError{Kind: td.FileNotExist}
 }
 
-func (fs FileService) Rename(dest string, src string) (err error) {
-	panic("implement me")
-}
-
-func (fs FileService) Remove(path string) (err error) {
-	panic("implement me")
+func (fs *FileService) Remove(path string) (err error) {
+	fs.rw.Lock()
+	defer fs.rw.Unlock()
+	if _, ok := fs.files[path]; !ok {
+		return &td.FileServiceError{Kind: td.FileNotExist}
+	}
+	delete(fs.files, path)
+	return nil
 }
 
 func NewFileService() *FileService {
 	return &FileService{}
+}
+
+type FilePermission struct {
+	isPublic  bool
+	isBlocked bool
+	blocked   map[string]bool
+	allowed   map[string]bool
+	code      map[string]bool
+}
+
+func (f *FilePermission) AllowUser(name string) {
+	if !f.isPublic && f.isBlocked {
+		f.allowed[name] = true
+	}
+}
+
+func (f *FilePermission) BlockUser(name string) {
+	if !f.isPublic && !f.isBlocked {
+		f.blocked[name] = true
+	}
+}
+
+func (f *FilePermission) AllowUserMeta(key, value string) {
+}
+
+func (f *FilePermission) BlockUserMeta(key, value string) {
+}
+
+func (f *FilePermission) AllowAllUser() {
+	if !f.isPublic {
+		f.isBlocked = false
+		f.blocked = make(map[string]bool)
+	}
+}
+
+func (f *FilePermission) BlockAllUser() {
+	if !f.isPublic {
+		f.isBlocked = true
+		f.allowed = make(map[string]bool)
+	}
+}
+
+func (f *FilePermission) AllowPublic(code string) {
+	f.isPublic = true
+	f.code = make(map[string]bool)
+}
+
+func (f *FilePermission) AllowCode(code string) {
+	if f.isPublic {
+		f.code[code] = true
+	}
+}
+
+func (f *FilePermission) BlockPublic() {
+	f.isPublic = false
+}
+
+func (f *FilePermission) BlockCode(code string) {
+	if f.isPublic {
+		delete(f.code, code)
+	}
+}
+
+func (f *FilePermission) TestUser(user td.User) bool {
+	return f.isPublic || (f.isBlocked && f.allowed[user.Name]) || (!f.isBlocked && !f.blocked[user.Name])
+}
+
+func (f *FilePermission) TestCode(code string) bool {
+	return f.isPublic && f.code[code]
 }
